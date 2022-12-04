@@ -22,17 +22,17 @@ contract Battle {
     mapping(uint256 => Request) public requests;
 
     // Counter to generate unique request IDs
-    uint256 private requestCounter;
+    uint256 public requestCounter;
 
     constructor(address playerContractAddress) {
         playerContract = Player(playerContractAddress);
     }
 
     // Function to request a battle with another player
-    function requestBattle(address receiver) public {
+    function requestBattle(address sender, address receiver) public {
         // Create a new Request object and populate its fields
         Request memory newRequest = Request({
-            sender: msg.sender,
+            sender: sender,
             receiver: receiver,
             timestamp: block.timestamp,
             status: 0 // Pending
@@ -42,58 +42,44 @@ contract Battle {
         requests[requestCounter++] = newRequest;
     }
 
-    // Function to accept a battle request
-    function acceptBattle(uint256 requestId) public {
+    function acceptBattle(uint256 requestId, address sender) public {
         // Retrieve the request from the mapping of requests
         Request memory request = requests[requestId];
 
-        // Ensure that the request has not been accepted or rejected already
+        // Ensure that the sender is the receiver of the request
         require(
-            request.status == 0,
-            "Request has already been accepted or rejected"
+            request.receiver == sender,
+            "Only the receiver of the request can accept it."
         );
 
-        // Ensure that the request is addressed to the msg.sender
-        require(
-            request.receiver == msg.sender,
-            "Request is not addressed to this player"
-        );
-
-        // Update the request to indicate that it has been accepted
+        // Update the request status to accepted
         request.status = 1;
+
+        // Save the updated request to the mapping of requests
         requests[requestId] = request;
-
-        // Trigger a call to the battle function
-        battle(request.sender, request.receiver);
     }
 
-    function battle(address player1, address player2) public {
-        // Import the Player contract and retrieve the player data for each player
-        Player player = Player(playerContract);
-        Player.PlayerData memory player1Data = player.getPlayerData(player1);
-        Player.PlayerData memory player2Data = player.getPlayerData(player2);
+function battle(address player1, address player2) public {
 
-        // Calculate the damage dealt by each player
-        uint256 player1Damage = player.calculateDamage(player1Data);
-        uint256 player2Damage = player.calculateDamage(player2Data);
+    // Retrieve player contract
+    Player player = Player(playerContract);
 
-        // Update the health of each player based on the damage they received
-        player1Data.health = safeSub(player1Data.health, player2Damage);
-        player2Data.health = safeSub(player2Data.health, player1Damage);
+    // Update the health of each player and their stats
+    player.calculateAndUpdateDamage(player1, player2);
 
-        // Update the player stats in the players mapping
+    // Retrieve player stats
+    Player.PlayerData memory player1Data = player.getPlayerData(player1);
+    Player.PlayerData memory player2Data = player.getPlayerData(player2);
+
+    // Check who won the battle and update their stats accordingly
+    if (player1Data.health > player2Data.health) {
+        player1Data.battlesWon++;
         player.setPlayerData(player1, player1Data);
+    } else if (player2Data.health > player1Data.health) {
+        player2Data.battlesWon++;
         player.setPlayerData(player2, player2Data);
-
-        // Check who won the battle and update their stats accordingly
-        if (player1Data.health > player2Data.health) {
-            player1Data.playersKilled++;
-            player.setPlayerData(player1, player1Data);
-        } else if (player2Data.health > player1Data.health) {
-            player2Data.playersKilled++;
-            player.setPlayerData(player2, player2Data);
-        }
     }
+}
 
     // Function to matchmake players and trigger battles
     function matchmaking() public {
@@ -121,14 +107,4 @@ contract Battle {
         }
     }
 
-    function safeSub(uint256 x, uint256 y) public pure returns (uint256) {
-        // Check if x is greater than or equal to y
-        if (x >= y) {
-            // If x is greater than or equal to y, return the result of x - y
-            return x - y;
-        } else {
-            // If x is less than y, return 0 to prevent underflow
-            return 0;
-        }
-    }
 }

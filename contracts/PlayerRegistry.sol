@@ -16,13 +16,13 @@ contract PlayerRegistry {
         owner = msg.sender;
     }
 
-    // Function to register a new player or start a new one
-    function registerPlayer() public {
-        // Create a new Player object in the Player contract and populate its fields with randomized stats
-        Player player = Player(playerContract);
-        player.createPlayer(randomValue(), randomValue(), randomValue());
-        // Add other relevant attributes here
-    }
+    // // Function to register a new player or start a new one
+    // function registerPlayer() public {
+    //     // Create a new Player object in the Player contract and populate its fields with randomized stats
+    //     Player player = Player(playerContract);
+    //     player.createPlayer(randomValue(), randomValue(), randomValue());
+    //     // Add other relevant attributes here
+    // }
 
     // Helper function to generate a random value for a player's stats
     function randomValue() private view returns (uint) {

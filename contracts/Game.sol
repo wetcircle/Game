@@ -28,7 +28,7 @@ contract Game {
 
         // Create a new Player object in the Player contract and populate its fields with randomized stats
         Player player = Player(playerContract);
-        player.createPlayer(randomValue(), randomValue(), randomValue());
+        player.createPlayer(msg.sender, randomValue(), randomValue(), randomValue());
         // Add other relevant attributes here
     }
 
